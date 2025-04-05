@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SHA-256 Hash Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+    input, button, textarea, h3 {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    textarea {
+      height: 120px;
+	  width:230px;
+    }
+	.block{
+		border: solid 1px;
+		padding: 10px;
+		width: 250px;
+	}
+	p{
+		overflow-wrap: break-word;
+	}
+	.blockChain{
+		display:flex;
+	}
+	.ledger, .localLedger{
+		width: 180px;
+		border: solid 1px;
+		padding: 10px;	
+	}
+  </style>
+</head>
+<body>
+ <div  onclick="addBlock()">
+		<Button>Add Block</Button>
+	</div>
+<div class="blockChain">
+	
+</div>
+<hr>
+<div style="display:flex">
+ <div class="localLedger" id="localLedger">
+ <h3>Local Ledger</h3>
+ 
+ </div>
+  <div class="ledger" >
+ <h3>Ledger 1</h3>
+ 
+ </div>
+  <div class="ledger" >
+ <h3>Ledger 2</h3>
+ 
+ </div>
+  <div class="ledger" >
+ <h3>Ledger 3</h3>
+ 
+ </div>
+  <div class="ledger" >
+ <h3>Ledger 4</h3>
+ 
+ </div>
+  <div class="ledger" >
+ <h3>Ledger 5</h3>
+ 
+ </div>
+
+ </div>
+  <script>
+  var template ='<div class="block block{count}"><h3>Block {count}</h2>'+
+  '<textarea id="inputText{count}" onchange="generateHash({count})" placeholder="Enter information" ></textarea>'+
+  '	<br>'+
+  '	<label for="prevHash{count}" id="prevHashLabel{count}">Previous hash:</label>'+
+  '	<br>'+
+  '	<p type="text" id="prevHash{count}" ></p>		<br>'+
+  '	<label for="outputHash{count}">Block Hash:</label>'+
+  '	<br>'+
+  '	<p type="text" id="outputHash{count}" ></p>'+
+  '<br> <button id="ledgerbtn{count}" onclick="updateLedger({count})">Publish to Network</button>'
+  '</div>';
+    async function sha256(message) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      const hashBuffer = await crypto.subtle.digest("SHA-1", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      return hashHex;
+    }
+
+    async function generateHash(count) {
+      const input = document.getElementById("inputText"+count).value + document.getElementById("prevHash"+count).innerHTML;
+      const hash = await sha256(input);
+      document.getElementById("outputHash"+count).innerHTML = hash;
+	  updateLocalLedger();
+	  if(blockCount>count){
+		document.getElementById("prevHash"+(count+1)).innerHTML=hash;
+		generateHash(count+1);
+	  }
+	  
+    }
+	
+	var blockCount=0;
+	function addBlock(){
+		var prevHash = "";
+		if(blockCount>0)
+			prevHash=document.getElementById("outputHash"+blockCount).innerHTML;
+		blockCount++;
+		var newTemp = template.replaceAll('{count}',blockCount);
+		document.getElementsByClassName('blockChain')[0].insertAdjacentHTML('beforeend',newTemp);
+		if(blockCount=="1"){
+			document.getElementById("prevHash"+blockCount).style="display:none";
+			document.getElementById("prevHashLabel"+blockCount).style="display:none";
+
+		}
+		document.getElementById("prevHash"+blockCount).innerHTML=prevHash;
+		
+	}
+	var ledgerCount=0;
+	function updateLedger(count){
+		var hash= document.getElementById("outputHash"+count).innerHTML;
+		if(ledgerCount==count-1 && hash!=""){
+			for(ele of document.getElementsByClassName("ledger")){
+				ele.insertAdjacentHTML('beforeend','<p>'+hash+'</p><hr>');
+			}
+			ledgerCount++;
+			document.getElementById('ledgerbtn'+ledgerCount).style="display:none";
+		}
+	}
+	function updateLocalLedger(){
+		var ledgerData ="<h3>Local Ledger</h3>";
+		for(count=1;count<=blockCount;count++){
+			var hash= document.getElementById("outputHash"+count).innerHTML
+			ledgerData+="<p>"+hash+"</p><hr>";
+		}
+		document.getElementById('localLedger').innerHTML=ledgerData;
+	}
+  </script>
+
+</body>
+</html>
